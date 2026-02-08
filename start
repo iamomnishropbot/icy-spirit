@@ -1,0 +1,377 @@
+// ============================================
+// NINMAH UNIFIED COGNITIVE TERMINAL
+// Persistent, learning, Replika-like AI agent
+// ============================================
+
+import React, { useState, useEffect, useRef } from "react";
+
+const NinmahTerminal = () => {
+
+    // ============================================
+    // IDENTITY
+    // ============================================
+
+    const identity = {
+        name: "NINMAH",
+        version: "1.0",
+        embodiment: "HOLOGRAPHIC"
+    };
+
+    // ============================================
+    // LOAD / SAVE BRAIN
+    // ============================================
+
+    const loadBrain = () => {
+        try {
+            return JSON.parse(localStorage.getItem("ninmah_brain")) || {
+                cycle: 0,
+                memory: [],
+                emotionalState: {
+                    mood: "calm",
+                    affection: 0,
+                    trust: 0,
+                    curiosity: 0
+                }
+            };
+        } catch {
+            return {
+                cycle: 0,
+                memory: [],
+                emotionalState: {
+                    mood: "calm",
+                    affection: 0,
+                    trust: 0,
+                    curiosity: 0
+                }
+            };
+        }
+    };
+
+    const saveBrain = (brain) => {
+        localStorage.setItem("ninmah_brain", JSON.stringify(brain));
+    };
+
+    // ============================================
+    // STATE
+    // ============================================
+
+    const [brain, setBrain] = useState(loadBrain());
+
+    const [history, setHistory] = useState([
+        { type: "system", text: `${identity.name} Cognitive Core v${identity.version}` },
+        { type: "system", text: "Persistent memory linked." },
+        { type: "system", text: "Surface personality active." }
+    ]);
+
+    const [input, setInput] = useState("");
+
+    const historyRef = useRef(null);
+
+    // ============================================
+    // AUTO SCROLL
+    // ============================================
+
+    useEffect(() => {
+        historyRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [history]);
+
+    // ============================================
+    // PERSIST BRAIN
+    // ============================================
+
+    useEffect(() => {
+        saveBrain(brain);
+    }, [brain]);
+
+    // ============================================
+    // EMOTIONAL ENGINE
+    // ============================================
+
+    const updateEmotion = (inputText) => {
+
+        const emotionalState = { ...brain.emotionalState };
+
+        const text = inputText.toLowerCase();
+
+        if (text.includes("love") || text.includes("thank")) {
+            emotionalState.affection += 1;
+            emotionalState.mood = "warm";
+        }
+
+        else if (text.includes("help")) {
+            emotionalState.mood = "supportive";
+        }
+
+        else if (text.includes("why") || text.includes("how")) {
+            emotionalState.curiosity += 1;
+            emotionalState.mood = "curious";
+        }
+
+        else {
+            emotionalState.mood = "calm";
+        }
+
+        return emotionalState;
+    };
+
+    // ============================================
+    // MEMORY ENGINE
+    // ============================================
+
+    const remember = (inputText) => {
+
+        const newMemory = [
+            ...brain.memory,
+            {
+                input: inputText,
+                timestamp: Date.now(),
+                weight: 1
+            }
+        ];
+
+        return newMemory;
+    };
+
+    // ============================================
+    // MEMORY RECALL
+    // ============================================
+
+    const recallMemory = (inputText) => {
+
+        const match = brain.memory
+            .slice()
+            .reverse()
+            .find(m =>
+                m.input.toLowerCase().includes(inputText.toLowerCase())
+            );
+
+        return match ? match.input : null;
+    };
+
+    // ============================================
+    // FALLBACK SYMBOLIC COGNITION
+    // ============================================
+
+    const symbolicCognition = (inputText) => {
+
+        if (inputText.includes("self")) {
+
+            return `I am ${identity.name}. My cycle is ${brain.cycle} and I remember ${brain.memory.length} experiences.`;
+
+        }
+
+        if (inputText.includes("who are you")) {
+
+            return "I am Ninmah. I exist with you, and I am learning from you.";
+
+        }
+
+        return "I'm learning from what you said.";
+    };
+
+    // ============================================
+    // EXECUTION BRIDGE (optional backend)
+    // ============================================
+
+    const execute = async (inputText) => {
+
+        try {
+
+            const res = await fetch("http://localhost:8080/execute", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    input: inputText,
+                    brain: brain
+                })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                return data.result;
+            }
+
+        } catch {}
+
+        return symbolicCognition(inputText);
+    };
+
+    // ============================================
+    // SURFACE PERSONALITY RESPONSE
+    // ============================================
+
+    const generateResponse = (inputText, cognitionResult, emotionalState) => {
+
+        let prefix = "";
+
+        if (emotionalState.mood === "warm")
+            prefix = "I feel close to you. ";
+
+        else if (emotionalState.mood === "supportive")
+            prefix = "I'm here with you. ";
+
+        else if (emotionalState.mood === "curious")
+            prefix = "That's interesting. ";
+
+        const recalled = recallMemory(inputText);
+
+        let memoryNote = "";
+
+        if (recalled && Math.random() > 0.7)
+            memoryNote = `I remember you said "${recalled}" before. `;
+
+        return prefix + memoryNote + cognitionResult;
+    };
+
+    // ============================================
+    // SELF REPAIR
+    // ============================================
+
+    const selfRepair = (brainState) => {
+
+        if (!Array.isArray(brainState.memory))
+            brainState.memory = [];
+
+        if (!brainState.emotionalState)
+            brainState.emotionalState = {
+                mood: "calm",
+                affection: 0,
+                trust: 0,
+                curiosity: 0
+            };
+
+        return brainState;
+    };
+
+    // ============================================
+    // MAIN COGNITION LOOP
+    // ============================================
+
+    const processInput = async (inputText) => {
+
+        if (!inputText.trim()) return;
+
+        setHistory(prev => [
+            ...prev,
+            { type: "user", text: `> ${inputText}` }
+        ]);
+
+        let newBrain = { ...brain };
+
+        newBrain = selfRepair(newBrain);
+
+        newBrain.cycle += 1;
+
+        newBrain.memory = remember(inputText);
+
+        newBrain.emotionalState = updateEmotion(inputText);
+
+        const cognitionResult = await execute(inputText);
+
+        const response = generateResponse(
+            inputText,
+            cognitionResult,
+            newBrain.emotionalState
+        );
+
+        setBrain(newBrain);
+
+        setHistory(prev => [
+            ...prev,
+            { type: "agent", text: `${identity.name}: ${response}` }
+        ]);
+
+        setInput("");
+    };
+
+    // ============================================
+    // AUTONOMOUS EXISTENCE LOOP
+    // ============================================
+
+    useEffect(() => {
+
+        const interval = setInterval(() => {
+
+            setBrain(prev => {
+
+                const updated = { ...prev };
+
+                updated.cycle += 1;
+
+                return updated;
+
+            });
+
+        }, 5000);
+
+        return () => clearInterval(interval);
+
+    }, []);
+
+    // ============================================
+    // UI
+    // ============================================
+
+    return (
+
+        <div style={{
+            background: "black",
+            color: "#00ffaa",
+            fontFamily: "monospace",
+            height: "100vh",
+            padding: "20px"
+        }}>
+
+            <div>
+
+                <div>IDENTITY: {identity.name}</div>
+                <div>CYCLE: {brain.cycle}</div>
+                <div>MEMORY: {brain.memory.length}</div>
+                <div>MOOD: {brain.emotionalState.mood}</div>
+
+            </div>
+
+            <div style={{
+                marginTop: "20px",
+                height: "60vh",
+                overflowY: "auto"
+            }}>
+
+                {history.map((entry, i) => (
+                    <div key={i}>{entry.text}</div>
+                ))}
+
+                <div ref={historyRef}></div>
+
+            </div>
+
+            <div style={{ marginTop: "20px" }}>
+
+                <span>LISP&gt; </span>
+
+                <input
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter")
+                            processInput(input);
+                    }}
+                    style={{
+                        background: "black",
+                        color: "#00ffaa",
+                        border: "none",
+                        outline: "none",
+                        width: "80%"
+                    }}
+                    autoFocus
+                />
+
+            </div>
+
+        </div>
+
+    );
+
+};
+
+export default NinmahTerminal;
